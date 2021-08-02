@@ -1,0 +1,21 @@
+//syntax = "proto3";
+//
+//enum currencyCode {
+//        USD = 1;
+//        EUR = 2;
+//        CHF = 3;
+//        ILS = 3;
+//}
+//
+//import "google.protobufs.Timestamp";
+//
+//message rateRequest(
+//        string currencyCode baseSymbol = 1 [default=USD],
+//        baseamount double=  2,
+//        string currencyCode targetSymbols = 3
+//        Timestamp timestamp
+//)
+//
+//message rateRequestResponse(
+//        repeated
+//)

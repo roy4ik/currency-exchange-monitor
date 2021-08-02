@@ -1,0 +1,68 @@
+version: '3.7'
+
+services:
+  mongo:
+    image: mongo:latest
+    restart: always
+    build:
+      context: .
+      dockerfile: exchange-data-db/Dockerfile
+    environment:
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_password.txt
+      MONGO_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongo_user.txt
+      MONGO_INITDB_DATABASE: admin
+      MONGO_PASSWORD_FILE: /run/secrets/mongo_password.txt
+      MONGO_USERNAME_FILE: /run/secrets/mongo_user.txt
+      MONGO_DATABASE: exchange_rates
+    secrets:
+        - mongodb_root_password
+        - mongodb_root_username
+        - mongodb_password
+        - mongodb_username
+    expose:
+      - 27017
+    networks:
+      - microservices
+
+  data_processor:
+    depends_on:
+      - mongo
+    build:
+      context: .
+      dockerfile: data_processor/Dockerfile
+    image: data_processor
+    networks:
+            - microservices
+    ports:
+      - 5099:5001
+
+    expose:
+      - 5000
+
+  alerts_monitor:
+    depends_on:
+      - mongo
+    build:
+      context: .
+      dockerfile: alerts_monitor/Dockerfile
+    image: alerts_monitor
+    networks:
+            - microservices
+    ports:
+      - 4099:4001
+    expose:
+      - 4000
+#
+secrets:
+      mongodb_root_password:
+        file: ../project_keys/currency_exchange/mongo_password.txt
+      mongodb_root_username:
+        file: ../project_keys/currency_exchange/mongo_user.txt
+      mongodb_password:
+        file: ../project_keys/currency_exchange/mongo_password.txt
+      mongodb_username:
+        file: ../project_keys/currency_exchange/mongo_user.txt
+
+networks:
+      microservices:
+
