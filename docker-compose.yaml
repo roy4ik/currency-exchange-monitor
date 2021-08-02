@@ -30,8 +30,6 @@ services:
     build:
       context: .
       dockerfile: data_processor/Dockerfile
-    environment:
-      DB_HOST: localhost
     image: data_processor
     networks:
             - microservices
@@ -47,14 +45,11 @@ services:
     build:
       context: .
       dockerfile: alerts_monitor/Dockerfile
-    environment:
-      DB_HOST: localhost
     image: alerts_monitor
     networks:
             - microservices
     ports:
       - 4099:4001
-
     expose:
       - 4000
 #

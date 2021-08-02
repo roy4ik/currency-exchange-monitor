@@ -2,12 +2,11 @@ from pymongo import MongoClient
 import os
 import pytest
 from settings import settings
-db_host = os.environ.get("DB_HOST", "localhost")
 print("data processor tests running")
 
 
 class TestDatabase:
-    db_uri = settings.CONFIG['db_uri']
+    db_uri = settings.CONFIG['mongo']['db_uri'].get(str)
 
     def test_mongo_connection(self):
         client = MongoClient(self.db_uri, username='root', password='example')
