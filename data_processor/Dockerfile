@@ -6,7 +6,7 @@ COPY protobufs/ /service/protobufs/
 COPY data_processor/ /service/data_processor/
 COPY settings /service/data_processor/settings
 COPY config /service/data_processor/config
-COPY shared/tests /service/data_processor/tests
+COPY shared/ /service/data_processor/
 
 COPY mongo_password.txt /run/secrets/mongo_password.txt
 COPY mongo_user.txt /run/secrets/mongo_user.txt
@@ -16,8 +16,6 @@ WORKDIR /service/data_processor/
 RUN python -m pip install --upgrade pip
 RUN python -m pip install -r requirements.txt
 
-#RUN python -m grpc_tools.protoc -I ../protobufs --python_out=. \
-#           --grpc_python_out=. ../protobufs/exchangerates.proto
 
 EXPOSE 50051
 

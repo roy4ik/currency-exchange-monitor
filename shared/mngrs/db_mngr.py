@@ -1,4 +1,4 @@
-from settings import settings, read_key_from_file
+from settings import settings
 from pymongo import MongoClient
 import datetime
 
@@ -27,8 +27,8 @@ class MongoDataBaseManager(DataBaseManager):
         try:
             print(f"Trying to connect to db with username: {settings.CONFIG['mongo']['user'].get(str)}")
             client = MongoClient(settings.CONFIG['mongo']['db_uri'].get(str),
-                                 username=read_key_from_file('user', 'mongo'),
-                                 password=read_key_from_file('password', 'mongo'),
+                                 username=settings.read_key_from_file('user', 'mongo'),
+                                 password=settings.read_key_from_file('password', 'mongo'),
                                  authSource="admin")
             if client:
                 print('Connected to mongo successfully')

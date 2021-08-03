@@ -1,12 +1,12 @@
 import requests
 import time
-from settings import settings
 
+from settings import settings
 from mngrs.db_mngr import MongoDataBaseManager
 
 
 class DataProcessor:
-    def __init__(self, fetch_interval=None,):
+    def __init__(self, fetch_interval=None):
         self.fetch_interval = fetch_interval
         if not self.fetch_interval:
             self.fetch_interval = settings.CONFIG['exchange_api_fetch_interval_seconds'].get(int)
@@ -16,15 +16,13 @@ class DataProcessor:
 
     def run(self):
         while True:
-            # set fetch interval (timeout)
-            fetch_interval = settings.CONFIG['exchange_api_fetch_interval_seconds'].get(int)
             # fetch data
             currency_fetcher = CurrencyApiAdapter()
             base_currency, target_rates_dict = currency_fetcher.fetch()
             # save data to db
             self.db_manager.set_rate(base_currency, target_rates_dict)
 
-            time.sleep(fetch_interval)
+            time.sleep(self.fetch_interval)
 
 
 class CurrencyFetcher:

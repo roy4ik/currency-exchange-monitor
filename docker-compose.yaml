@@ -34,7 +34,7 @@ services:
     networks:
             - microservices
     ports:
-      - 5099:5001
+      - "5099:5099"
 
     expose:
       - 5000
@@ -49,9 +49,75 @@ services:
     networks:
             - microservices
     ports:
-      - 4099:4001
+      - "4001:4001"
     expose:
       - 4000
+
+  alerts_handler:
+    depends_on:
+      - alerts_monitor
+      - zookeeper-1
+      - kafka-1
+    build:
+      context: .
+      dockerfile: alerts_handler/Dockerfile
+    image: alerts_handler
+    networks:
+      - microservices
+    ports:
+      - "7020:7020"
+    expose:
+      - 7000
+
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+    ports:
+      - "22181:2181"
+
+  zookeeper-2:
+      image: confluentinc/cp-zookeeper:latest
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+
+      ports:
+        - "32181:2181"
+
+  kafka-1:
+      image: confluentinc/cp-kafka:latest
+      depends_on:
+        - zookeeper-1
+        - zookeeper-2
+
+      ports:
+        - "29092:29092"
+      environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:29092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka-2:
+      image: confluentinc/cp-kafka:latest
+      depends_on:
+        - zookeeper-1
+        - zookeeper-2
+
+      ports:
+        - "39092:39092"
+      environment:
+        KAFKA_BROKER_ID: 2
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:39092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 #
 secrets:
       mongodb_root_password:
