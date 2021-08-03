@@ -2,7 +2,6 @@ FROM python:3.9
 
 RUN mkdir /service
 
-COPY protobufs/ /service/protobufs/
 COPY data_processor/ /service/data_processor/
 COPY settings /service/data_processor/settings
 COPY config /service/data_processor/config

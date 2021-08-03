@@ -2,7 +2,6 @@ FROM python:3.9
 
 RUN mkdir /service
 
-COPY protobufs/ /service/protobufs/
 COPY settings /service/alerts_monitor/settings
 COPY config /service/alerts_monitor/config
 COPY alerts_monitor/ /service/alerts_monitor/
