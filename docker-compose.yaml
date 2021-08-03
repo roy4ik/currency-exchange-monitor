@@ -10,7 +10,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_password.txt
       MONGO_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongo_user.txt
-      MONGO_INITDB_DATABASE: admin
+      -MONGO_INITDB_DATABASE: admin
       MONGO_PASSWORD_FILE: /run/secrets/mongo_password.txt
       MONGO_USERNAME_FILE: /run/secrets/mongo_user.txt
       MONGO_DATABASE: exchange_rates

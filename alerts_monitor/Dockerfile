@@ -8,13 +8,16 @@ COPY config /service/alerts_monitor/config
 COPY alerts_monitor/ /service/alerts_monitor/
 COPY shared/tests /service/alerts_monitor/tests
 
+COPY mongo_password.txt /run/secrets/mongo_password.txt
+COPY mongo_user.txt /run/secrets/mongo_user.txt
+
 WORKDIR /service/alerts_monitor/
 
 RUN python -m pip install --upgrade pip
 RUN python -m pip install -r requirements.txt
 
-RUN python -m grpc_tools.protoc -I ../protobufs --python_out=. \
-           --grpc_python_out=. ../protobufs/exchangerates.proto
+#RUN python -m grpc_tools.protoc -I ../protobufs --python_out=. \
+#           --grpc_python_out=. ../protobufs/exchangerates.proto
 
 EXPOSE 50051
 
