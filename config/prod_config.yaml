@@ -1,3 +1,11 @@
-currency_change_threshold: 0.01
+currency_change_threshold: 0.0000001
 
 exchange_api_fetch_interval_seconds: 2
+exchange_api_uri: https://api.exchangerate.host/
+target_currency_codes: ['EUR', 'CHF', 'GBP', 'AUD']
+base_currency: USD
+mongo:
+  collection_name: exchange_rates
+  db_uri: mongodb://mongo:27017/
+  user: /run/secrets/mongo_user.txt
+  password: /run/secrets/mongo_password.txt
