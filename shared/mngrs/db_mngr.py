@@ -76,9 +76,9 @@ class MongoDataBaseManager(DataBaseManager):
             else:
                 print("Warning - less than requested rates found in db, returning [(None, None)]")
                 return [(None, None)]
-        except ConnectionError as e:
+        except errors.ServerSelectionTimeoutError as e:
             print(e)
-            self.connect()
+            self.connect(retry_limit=0)
 
     def set_rate(self, currency_code, target_rates):
         """saves the rate and all target rates included in target rates to the db
@@ -106,11 +106,13 @@ class MongoDataBaseManager(DataBaseManager):
             #  - currently adding a currency will cause to saving new rates even if only one is new or changed
             if time_delta.total_seconds() > settings.CONFIG['exchange_api_fetch_interval_seconds'].get(int) and \
                     rates_to_update != target_rates:
+                if not self.db.command('ping'):
+                    self.connect(retry_limit=0)
                 try:
                     saved_rate = self.db.insert_one(document)
                     print(f"saving rates to db:\n{document}, {saved_rate.acknowledged}")
                     return timestamp
-                except ConnectionError as e:
+                except errors.ServerSelectionTimeoutError as e:
                     print(e)
             else:
                 print(f"Setting rate: found existing rates: {timestamp_to_update}, {rates_to_update}")

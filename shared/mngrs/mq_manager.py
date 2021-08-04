@@ -13,7 +13,7 @@ class MessageBroker:
 
     def set_producer(self,
                      reconnect_time_seconds=5,
-                     bootstrap_servers=settings.CONFIG['bootstrap_servers'].get(list),
+                     bootstrap_servers=settings.CONFIG['kafka']['bootstrap_servers'].get(list),
                      retry_limit=10):
         n_attempt = 0
         while True:
@@ -48,7 +48,7 @@ class MessageConsumer:
     def set_consumer(self,
                      topic,
                      reconnect_time_seconds=5,
-                     bootstrap_servers=settings.CONFIG['bootstrap_servers'].get(list),
+                     bootstrap_servers=settings.CONFIG['kafka']['bootstrap_servers'].get(list),
                      retry_limit=10):
         n_attempt = 0
         while True:
