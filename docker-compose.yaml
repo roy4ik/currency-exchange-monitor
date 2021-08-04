@@ -87,7 +87,6 @@ services:
       image: confluentinc/cp-kafka:latest
       depends_on:
         - zookeeper-1
-        - zookeeper-2
 
       ports:
         - "9092:9092"

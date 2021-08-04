@@ -5,7 +5,7 @@ RUN mkdir /service
 COPY settings /service/alerts_handler/settings
 COPY config /service/alerts_handler/config
 COPY alerts_handler/ /service/alerts_handler/
-COPY shared/tests /service/alerts_handler/tests
+COPY shared/mngrs /service/alerts_handler/mngrs
 
 WORKDIR /service/alerts_handler/
 
@@ -15,4 +15,4 @@ RUN python -m pip install -r requirements.txt
 
 EXPOSE 50051
 
-ENTRYPOINT [ "python", "/service/alerts_monitor/alerts_handler.py" ]
+ENTRYPOINT [ "python", "/service/alerts_handler/alerts_handler.py" ]
