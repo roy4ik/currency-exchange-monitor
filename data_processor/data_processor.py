@@ -13,7 +13,6 @@ class DataProcessor:
 
         self.db_manager = MongoDataBaseManager()
 
-
     def run(self):
         while True:
             # fetch data
