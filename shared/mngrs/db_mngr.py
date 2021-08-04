@@ -28,6 +28,7 @@ class MongoDataBaseManager(DataBaseManager):
         n_attempt = 0
         while True:
             n_attempt += 1
+            print(f"Trying to connect to DB: attempt: {n_attempt}")
             try:
                 print(f"Trying to connect to db with username: {settings.CONFIG['mongo']['user'].get(str)}")
                 client = MongoClient(settings.CONFIG['mongo']['db_uri'].get(str),
@@ -50,7 +51,6 @@ class MongoDataBaseManager(DataBaseManager):
                 if retry_limit and n_attempt == retry_limit:
                     raise ConnectionError("Could not connect to db!")
                 time.sleep(reconnect_time_seconds)
-                print(f"Trying to reconnect to DB: attempt: {n_attempt}")
 
     def get_rates(self, currency_code, n_recent_rates=1, required_target_currencies=['GBP']):
         """gets the rate entries from the db. if n_recent_rates is not defined it will provide the current rate
