@@ -15,5 +15,13 @@ Tech-Stack:
 -KafkaMQ
 -Docker
 
-To run this make sure you have docker installed (https://www.docker.com/products/docker-desktop)
-run: docker-compose up
+Prerequisites:
+-To run this make sure you have docker installed (https://www.docker.com/products/docker-desktop)
+
+-Create a .txt file for your mongo password and update the paths in the config, this should only contain one line: <password>
+
+-Create a .txt file for your mongo user and  update the paths in the config this should only contain one line: <user>
+
+Run: 
+'docker-compose up' in terminal
+
