@@ -79,6 +79,7 @@ class MongoDataBaseManager(DataBaseManager):
         except errors.ServerSelectionTimeoutError as e:
             print(e)
             self.connect(retry_limit=0)
+            return [(None, None)]
 
     def set_rate(self, currency_code, target_rates):
         """saves the rate and all target rates included in target rates to the db
