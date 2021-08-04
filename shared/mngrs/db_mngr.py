@@ -31,12 +31,13 @@ class MongoDataBaseManager(DataBaseManager):
                                  password=settings.read_key_from_file('password', 'mongo'),
                                  authSource="admin")
             if client:
-                print('Connected to mongo successfully')
-            db = client[settings.CONFIG['mongo']['collection_name'].get(str)]
-            collection = db[settings.CONFIG['mongo']['collection_name'].get(str)]
+                db = client[settings.CONFIG['mongo']['collection_name'].get(str)]
+                collection = db[settings.CONFIG['mongo']['collection_name'].get(str)]
+                if db.command('ping'):
+                    print('Connected to mongo successfully')
+                    print(f"DB: {db}\n collection: {collection}")
 
-            print(f"DB: {db}\n collection: {collection}")
-            return collection
+                return collection
         except ConnectionError as e:
             raise e
 
@@ -68,19 +69,23 @@ class MongoDataBaseManager(DataBaseManager):
             print(e)
             self.connect()
 
-    def set_rate(self, currency_code, target_rates) -> float:
+    def set_rate(self, currency_code, target_rates):
         """saves the rate and all target rates included in target rates to the db
         Args:
             currency_code (str): currency code like 'EUR'
             target_rates (dict): {'eur': 1, 'chf': 1.2}
         Returns:
-            timestamp (float):
+            timestamp (float): timestamp is returned if a rate entry has been made, otherwise returns None
         """
         timestamp = datetime.datetime.utcnow().timestamp()
         timestamp_to_update, rates_to_update = self.get_rates(currency_code,
                                                               n_recent_rates=1,
                                                               required_target_currencies=list(target_rates.keys()))[0]
-        document = {"currency_code": currency_code, 'timestamp': timestamp, "rates": target_rates}
+        document = {
+            "currency_code": currency_code.upper(),
+            'timestamp': timestamp,
+            "rates": {k.upper(): v for k, v in target_rates.items()}
+        }
         if rates_to_update:
             print(f"found existing rates: {timestamp_to_update}, {rates_to_update}")
             time_delta = datetime.datetime.fromtimestamp(timestamp) - \
@@ -105,4 +110,3 @@ class MongoDataBaseManager(DataBaseManager):
         """deletes a rate entry from db based on a timestamp"""
         results = self.db.find_one({"timestamp": timestamp})
         return self.db.delete_one(results).deleted_count
-
