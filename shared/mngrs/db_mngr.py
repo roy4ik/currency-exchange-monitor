@@ -1,6 +1,7 @@
 from settings import settings
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 import datetime
+import time
 
 
 class DataBaseManager:
@@ -21,25 +22,35 @@ class DataBaseManager:
 class MongoDataBaseManager(DataBaseManager):
     def __init__(self):
         super().__init__()
-        self.db = self.connect()
+        self.db = self.connect(0)
 
-    def connect(self):
-        try:
-            print(f"Trying to connect to db with username: {settings.CONFIG['mongo']['user'].get(str)}")
-            client = MongoClient(settings.CONFIG['mongo']['db_uri'].get(str),
+    def connect(self, retry_limit=10, reconnect_time_seconds=5):
+        n_attempt = 0
+        while True:
+            n_attempt += 1
+            try:
+                print(f"Trying to connect to db with username: {settings.CONFIG['mongo']['user'].get(str)}")
+                client = MongoClient(settings.CONFIG['mongo']['db_uri'].get(str),
                                  username=settings.read_key_from_file('user', 'mongo'),
                                  password=settings.read_key_from_file('password', 'mongo'),
                                  authSource="admin")
-            if client:
-                db = client[settings.CONFIG['mongo']['collection_name'].get(str)]
-                collection = db[settings.CONFIG['mongo']['collection_name'].get(str)]
-                if db.command('ping'):
-                    print('Connected to mongo successfully')
-                    print(f"DB: {db}\n collection: {collection}")
+                if client:
+                    db = client[settings.CONFIG['mongo']['collection_name'].get(str)]
+                    collection = db[settings.CONFIG['mongo']['collection_name'].get(str)]
+                    if db.command('ping'):
+                        print('Connected to mongo successfully')
+                        print(f"DB: {db}\n collection: {collection}")
+                    return collection
 
-                return collection
-        except ConnectionError as e:
-            raise e
+            except errors.ServerSelectionTimeoutError as e:
+                print(e)
+            except errors.ConnectionFailure as e:
+                print(e)
+            finally:
+                if retry_limit and n_attempt == retry_limit:
+                    raise ConnectionError("Could not connect to db!")
+                time.sleep(reconnect_time_seconds)
+                print(f"Trying to reconnect to DB: attempt: {n_attempt}")
 
     def get_rates(self, currency_code, n_recent_rates=1, required_target_currencies=['GBP']):
         """gets the rate entries from the db. if n_recent_rates is not defined it will provide the current rate
