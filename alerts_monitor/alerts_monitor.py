@@ -1,21 +1,8 @@
 import time
-from kafka import KafkaProducer
-import json
 
 from settings import settings
+from mngrs.mq_manager import MessageBroker
 from mngrs.db_mngr import MongoDataBaseManager
-
-
-class MessageBroker:
-    producer = KafkaProducer(bootstrap_servers=['kafka-1:9092'],
-                             api_version=(0, 10),
-                             value_serializer=lambda x:
-                             json.dumps(x).encode('utf-8'))
-    topic = 'exchange_rate_increase'
-
-    def send(self, message):
-        print(f'sent message: {message}')
-        self.producer.send(self.topic, value=message)
 
 
 class AlertsMonitor:
@@ -81,8 +68,11 @@ class AlertsMonitor:
 
     def run(self):
         while True:
-            self.monitor()
-            time.sleep(self.fetch_interval)
+            if self.message_broker.producer:
+                self.monitor()
+                time.sleep(self.fetch_interval)
+            else:
+                self.message_broker.set_producer(retry_limit=0)
 
 
 alerts_monitor = AlertsMonitor()
