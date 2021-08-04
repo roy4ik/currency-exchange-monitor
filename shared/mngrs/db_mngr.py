@@ -89,6 +89,7 @@ class MongoDataBaseManager(DataBaseManager):
             timestamp (float): timestamp is returned if a rate entry has been made, otherwise returns None
         """
         timestamp = datetime.datetime.utcnow().timestamp()
+        # get most recent rate to check if it a newer rate is available
         timestamp_to_update, rates_to_update = self.get_rates(currency_code,
                                                               n_recent_rates=1,
                                                               required_target_currencies=list(target_rates.keys()))[0]
@@ -98,9 +99,11 @@ class MongoDataBaseManager(DataBaseManager):
             "rates": {k.upper(): v for k, v in target_rates.items()}
         }
         if rates_to_update:
-            print(f"found existing rates: {timestamp_to_update}, {rates_to_update}")
             time_delta = datetime.datetime.fromtimestamp(timestamp) - \
                          datetime.datetime.fromtimestamp(timestamp_to_update)
+            # only save rate if rates changed
+            # TODO: check on currency base
+            #  - currently adding a currency will cause to saving new rates even if only one is new or changed
             if time_delta.total_seconds() > settings.CONFIG['exchange_api_fetch_interval_seconds'].get(int) and \
                     rates_to_update != target_rates:
                 try:
@@ -110,6 +113,7 @@ class MongoDataBaseManager(DataBaseManager):
                 except ConnectionError as e:
                     print(e)
             else:
+                print(f"Setting rate: found existing rates: {timestamp_to_update}, {rates_to_update}")
                 print("rates didn't change no update needed")
                 return
         else:
@@ -117,7 +121,9 @@ class MongoDataBaseManager(DataBaseManager):
             print(f"saving initial rates to db:\n{document}, {saved_rate.acknowledged}")
             return timestamp
 
-    def delete_rate(self, timestamp):
-        """deletes a rate entry from db based on a timestamp"""
-        results = self.db.find_one({"timestamp": timestamp})
-        return self.db.delete_one(results).deleted_count
+# TODO: clean up rates to only keep a certain amount of rates in db
+
+#     def delete_rate(self, timestamp):
+#         """deletes a rate entry from db based on a timestamp"""
+#         results = self.db.find_one({"timestamp": timestamp})
+#         return self.db.delete_one(results).deleted_count
