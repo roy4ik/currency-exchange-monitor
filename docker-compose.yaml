@@ -80,14 +80,8 @@ services:
     ports:
       - "22181:2181"
 
-  zookeeper-2:
-      image: confluentinc/cp-zookeeper:latest
-      environment:
-        ZOOKEEPER_CLIENT_PORT: 2181
-        ZOOKEEPER_TICK_TIME: 2000
-
-      ports:
-        - "2181:2181"
+    networks:
+      - microservices
 
   kafka-1:
       image: confluentinc/cp-kafka:latest
@@ -100,27 +94,47 @@ services:
       environment:
         KAFKA_BROKER_ID: 1
         KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
-        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:29092
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:9095
         KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
         KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
         KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  kafka-2:
-      image: confluentinc/cp-kafka:latest
-      depends_on:
-        - zookeeper-1
-        - zookeeper-2
+      networks:
+        - microservices
 
-      ports:
-        - "39092:39092"
-      environment:
-        KAFKA_BROKER_ID: 2
-        KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
-        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:39092
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#running only one kafka MQ for now
+#  zookeeper-2:
+#      image: confluentinc/cp-zookeeper:latest
+#      environment:
+#        ZOOKEEPER_CLIENT_PORT: 2181
+#        ZOOKEEPER_TICK_TIME: 2000
 #
+#      ports:
+#        - "2181:2181"
+#
+#      networks:
+#        - microservices
+
+#running only one kafka MQ for now
+#  kafka-2:
+#      image: confluentinc/cp-kafka:latest
+#      depends_on:
+#        - zookeeper-1
+#        - zookeeper-2
+#
+#      ports:
+#        - "9095:9095"
+#      environment:
+#        KAFKA_BROKER_ID: 2
+#        KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+#        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:9095
+#        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+#        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+#        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#
+#      networks:
+#        - microservices
+
 secrets:
       mongodb_root_password:
         file: ../project_keys/currency_exchange/mongo_password.txt
