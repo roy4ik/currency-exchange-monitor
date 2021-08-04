@@ -15,8 +15,8 @@ class DataBaseManager:
         timestamp = datetime.datetime.now().timestamp()
         raise NotImplementedError
 
-    def delete_rate(self, timestamp):
-        raise NotImplementedError
+    # def delete_rate(self, timestamp):
+    #     raise NotImplementedError
 
 
 class MongoDataBaseManager(DataBaseManager):
@@ -32,9 +32,9 @@ class MongoDataBaseManager(DataBaseManager):
             try:
                 print(f"Trying to connect to db with username: {settings.CONFIG['mongo']['user'].get(str)}")
                 client = MongoClient(settings.CONFIG['mongo']['db_uri'].get(str),
-                                 username=settings.read_key_from_file('user', 'mongo'),
-                                 password=settings.read_key_from_file('password', 'mongo'),
-                                 authSource="admin")
+                                     username=settings.read_key_from_file('user', 'mongo'),
+                                     password=settings.read_key_from_file('password', 'mongo'),
+                                     authSource="admin")
                 if client:
                     db = client[settings.CONFIG['mongo']['collection_name'].get(str)]
                     collection = db[settings.CONFIG['mongo']['collection_name'].get(str)]
