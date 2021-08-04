@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 
 services:
   mongo:
@@ -19,6 +19,8 @@ services:
         - mongodb_root_username
         - mongodb_password
         - mongodb_username
+    ports:
+      - "27017:27017"
     expose:
       - 27017
     networks:
@@ -85,7 +87,7 @@ services:
         ZOOKEEPER_TICK_TIME: 2000
 
       ports:
-        - "32181:2181"
+        - "2181:2181"
 
   kafka-1:
       image: confluentinc/cp-kafka:latest
@@ -94,7 +96,7 @@ services:
         - zookeeper-2
 
       ports:
-        - "29092:29092"
+        - "9092:9092"
       environment:
         KAFKA_BROKER_ID: 1
         KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
