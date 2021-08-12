@@ -4,6 +4,7 @@ from settings import settings
 from mngrs.db_mngr import MongoDataBaseManager
 from currency_api_adapters import CurrencyApiAdapter
 
+
 class DataProcessor:
     def __init__(self, fetch_interval=None):
         self.fetch_interval = fetch_interval
