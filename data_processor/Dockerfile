@@ -14,7 +14,7 @@ WORKDIR /service/data_processor/
 
 RUN python -m pip install --upgrade pip
 RUN python -m pip install -r requirements.txt
-
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 50051
 

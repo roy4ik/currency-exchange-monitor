@@ -41,6 +41,9 @@ services:
     expose:
       - 5000
 
+    environment:
+      - PYTHONUNBUFFERED=1
+
   alerts_monitor:
     depends_on:
       - mongo
@@ -54,6 +57,9 @@ services:
       - "4001:4001"
     expose:
       - 4000
+
+    environment:
+      - PYTHONUNBUFFERED=1
 
   alerts_handler:
     depends_on:
@@ -70,6 +76,9 @@ services:
       - "7020:7020"
     expose:
       - 7000
+
+    environment:
+      - PYTHONUNBUFFERED=1
 
   zookeeper-1:
     image: confluentinc/cp-zookeeper:latest
