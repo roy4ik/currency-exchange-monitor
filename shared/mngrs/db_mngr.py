@@ -23,6 +23,7 @@ class MongoDataBaseManager(DataBaseManager):
     def __init__(self):
         super().__init__()
         self.db = self.connect(0)
+        self.collection = self.get_collection()
 
     def connect(self, retry_limit=10, reconnect_time_seconds=5):
         n_attempt = 0
@@ -37,11 +38,10 @@ class MongoDataBaseManager(DataBaseManager):
                                      authSource="admin")
                 if client:
                     db = client[settings.CONFIG['mongo']['collection_name'].get(str)]
-                    collection = db[settings.CONFIG['mongo']['collection_name'].get(str)]
                     if db.command('ping'):
                         print('Connected to mongo successfully')
-                        print(f"DB: {db}\n collection: {collection}")
-                    return collection
+                        print(f"DB: {db}\n collection: {db}")
+                    return db
 
             except errors.ServerSelectionTimeoutError as e:
                 print(e)
@@ -51,6 +51,9 @@ class MongoDataBaseManager(DataBaseManager):
                 if retry_limit and n_attempt == retry_limit:
                     raise ConnectionError("Could not connect to db!")
                 time.sleep(reconnect_time_seconds)
+
+    def get_collection(self):
+        return self.db[settings.CONFIG['mongo']['collection_name'].get(str)]
 
     def get_rates(self, currency_code, n_recent_rates=1, required_target_currencies=['GBP']):
         """gets the rate entries from the db. if n_recent_rates is not defined it will provide the current rate
@@ -63,8 +66,8 @@ class MongoDataBaseManager(DataBaseManager):
         """
         try:
             # get results sorted by latest timestamp first, and limited by n_recent_rates
-            results = self.db.find({"currency_code": currency_code.upper()}
-                                   ).sort("timestamp", -1).limit(n_recent_rates)
+            results = self.collection.find({"currency_code": currency_code.upper()}
+                                           ).sort("timestamp", -1).limit(n_recent_rates)
             if results.count(with_limit_and_skip=True) == n_recent_rates:
                 print(f"results found: {results.count(with_limit_and_skip=True)}")
                 if required_target_currencies:
@@ -74,7 +77,8 @@ class MongoDataBaseManager(DataBaseManager):
                 else:
                     return [(result.get('timestamp'), result.get('rates')) for result in results]
             else:
-                print("Warning - less than requested rates found in db, returning [(None, None)]")
+                print(f"Warning - less than requested rates found in db "
+                      f"({results.count(with_limit_and_skip=True)}), returning [(None, None)]")
                 return [(None, None)]
         except errors.ServerSelectionTimeoutError as e:
             print(e)
@@ -99,30 +103,31 @@ class MongoDataBaseManager(DataBaseManager):
             'timestamp': timestamp,
             "rates": {k.upper(): v for k, v in target_rates.items()}
         }
-        if rates_to_update:
-            time_delta = datetime.datetime.fromtimestamp(timestamp) - \
-                         datetime.datetime.fromtimestamp(timestamp_to_update)
-            # only save rate if rates changed
-            # TODO: check on currency base
-            #  - currently adding a currency will cause to saving new rates even if only one is new or changed
-            if time_delta.total_seconds() > settings.CONFIG['exchange_api_fetch_interval_seconds'].get(int) and \
-                    rates_to_update != target_rates:
-                if not self.db.command('ping'):
-                    self.connect(retry_limit=0)
-                try:
-                    saved_rate = self.db.insert_one(document)
+        try:
+            if rates_to_update:
+                time_delta = datetime.datetime.fromtimestamp(timestamp) - \
+                             datetime.datetime.fromtimestamp(timestamp_to_update)
+                # only save rate if rates changed
+                # TODO: check on currency base
+                #  - currently adding a currency will cause to saving new rates even if only one is new or changed
+                if time_delta.total_seconds() > settings.CONFIG['exchange_api_fetch_interval_seconds'].get(int) and \
+                        rates_to_update != target_rates:
+                    saved_rate = self.collection.insert_one(document)
                     print(f"saving rates to db:\n{document}, {saved_rate.acknowledged}")
                     return timestamp
-                except errors.ServerSelectionTimeoutError as e:
-                    print(e)
+                else:
+                    print(f"Setting rate: found existing rates: {timestamp_to_update}, {rates_to_update}")
+                    print("rates didn't change no update needed")
+                    return
             else:
-                print(f"Setting rate: found existing rates: {timestamp_to_update}, {rates_to_update}")
-                print("rates didn't change no update needed")
-                return
-        else:
-            saved_rate = self.db.insert_one(document)
-            print(f"saving initial rates to db:\n{document}, {saved_rate.acknowledged}")
-            return timestamp
+                # if never run insert below code to make sure you have a low exchange rate for testing
+                initial_rates = {"rates": {"CHF": 0.00001, "GBP": 0.00001, "EUR": 0.00001}}
+                document.update(initial_rates)
+                saved_rate = self.collection.insert_one(document)
+                print(f"saving initial rates to db:\n{document}, {saved_rate.acknowledged}")
+                return timestamp
+        except errors.ServerSelectionTimeoutError as e:
+            print(e)
 
 # TODO: clean up rates to only keep a certain amount of rates in db
 
