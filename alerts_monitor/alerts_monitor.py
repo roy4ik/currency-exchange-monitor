@@ -24,6 +24,9 @@ class AlertsMonitor:
             self.base_currency,
             n_recent_rates=2,
             required_target_currencies=self.target_currency_codes)
+        self._monitor_rate_increase(rates)
+
+    def _monitor_rate_increase(self, rates):
         if len(rates) > 1:
             # check increase for every target currency
             for target_currency in self.target_currency_codes:
