@@ -76,6 +76,6 @@ class MessageConsumer:
         for message in self.consumer:
             print(message.value)
             prarams = {"message": message.value}
-            requests.get("https://webhook.site/46d516f2-3fc1-49b9-a4b0-98f9930565df",
+            requests.get("https://webhook.site/88f80d7e-75fa-4261-9a05-0d22443012c6",
                          params=prarams)
             time.sleep(2)
