@@ -66,7 +66,7 @@ class MongoDataBaseManager(DataBaseManager):
         """
         try:
             # get results sorted by latest timestamp first, and limited by n_recent_rates
-            required_target_currencies_query = [{f"rate.{currency.upper()}": {"$exists": True}}
+            required_target_currencies_query = [{f"rates.{currency.upper()}": {"$exists": True}}
                                                 for currency in required_target_currencies]
             results = self.collection.find({"$and": [{"currency_code": currency_code.upper()},
                                                      *required_target_currencies_query]
