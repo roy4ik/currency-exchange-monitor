@@ -55,7 +55,7 @@ class MongoDataBaseManager(DataBaseManager):
     def get_collection(self):
         return self.db[settings.CONFIG['mongo']['collection_name'].get(str)]
 
-    def get_rates(self, currency_code, n_recent_rates=1, required_target_currencies=['GBP']):
+    def get_rates(self, currency_code, n_recent_rates=1, required_target_currencies=["GBP"]):
         """gets the rate entries from the db. if n_recent_rates is not defined it will provide the current rate
         Args:
             currency_code (str): currency code like 'EUR'
@@ -66,16 +66,14 @@ class MongoDataBaseManager(DataBaseManager):
         """
         try:
             # get results sorted by latest timestamp first, and limited by n_recent_rates
-            results = self.collection.find({"currency_code": currency_code.upper()}
-                                           ).sort("timestamp", -1).limit(n_recent_rates)
+            required_target_currencies_query = [{f"rate.{currency.upper()}": {"$exists": True}}
+                                                for currency in required_target_currencies]
+            results = self.collection.find({"$and": [{"currency_code": currency_code.upper()},
+                                                     *required_target_currencies_query]
+                                            }).sort("timestamp", -1).limit(n_recent_rates)
             if results.count(with_limit_and_skip=True) == n_recent_rates:
                 print(f"results found: {results.count(with_limit_and_skip=True)}")
-                if required_target_currencies:
-                    # TODO: optimization -> move filter to query ("$exists") ..didn't work so far
-                    return [(result.get('timestamp'), result.get('rates')) for result in results
-                            if [result.get('rates', {}).get(target) for target in required_target_currencies]]
-                else:
-                    return [(result.get('timestamp'), result.get('rates')) for result in results]
+                return [(result.get('timestamp'), result.get('rates')) for result in results]
             else:
                 print(f"Warning - less than requested rates found in db "
                       f"({results.count(with_limit_and_skip=True)}), returning [(None, None)]")
