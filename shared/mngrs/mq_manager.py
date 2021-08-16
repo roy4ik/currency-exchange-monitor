@@ -44,6 +44,7 @@ class MessageConsumer:
     def __init__(self, topic='exchange_rate_increase'):
         self.consumer = self.set_consumer(topic)
         self.consumer.subscribe([topic])
+        self.webhook_endpoint = settings.CONFIG['webhook_endpoint'].get(str)
 
     def set_consumer(self,
                      topic,
@@ -76,6 +77,5 @@ class MessageConsumer:
         for message in self.consumer:
             print(message.value)
             prarams = {"message": message.value}
-            requests.get("https://webhook.site/88f80d7e-75fa-4261-9a05-0d22443012c6",
-                         params=prarams)
-            time.sleep(2)
+            requests.post(self.webhook_endpoint, params=prarams)
+            # time.sleep(2)
