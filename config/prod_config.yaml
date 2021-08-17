@@ -6,7 +6,7 @@ exchange_api_uri: https://api.exchangerate.host/
 #change this to your endpoint address
 webhook_endpoint: "https://webhook.site/88f80d7e-75fa-4261-9a05-0d22443012c6"
 
-target_currency_codes: ['EUR', 'CHF', 'GBP', 'AUD']
+target_currency_codes: ['EUR', 'CHF']
 base_currency: USD
 
 mongo:
