@@ -1,6 +1,7 @@
 import os
 
 ENV = os.environ.get("ENV", "PROD")
+print(f"ENVIRONMENT: {ENV}")
 if ENV == "DEV":
     import settings.local_settings as local_settings
     settings = local_settings
