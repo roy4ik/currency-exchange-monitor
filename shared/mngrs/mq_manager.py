@@ -36,7 +36,7 @@ class MessageBroker:
             json.dumps(x).encode('utf-8'))
 
     def send(self, message):
-        print(f'sent message: {message}')
+        # print(f'sent message: {message}')
         self.producer.send(self.topic, value=message)
 
 
@@ -50,7 +50,7 @@ class MessageConsumer:
                      topic,
                      reconnect_time_seconds=5,
                      bootstrap_servers=settings.CONFIG['kafka']['bootstrap_servers'].get(list),
-                     retry_limit=10):
+                     retry_limit=10) -> KafkaConsumer:
         n_attempt = 0
         while True:
             n_attempt += 1
@@ -64,7 +64,14 @@ class MessageConsumer:
                 print(f'Trying to reconnect to {bootstrap_servers} in {reconnect_time_seconds} seconds')
 
     @staticmethod
-    def consumer_connect(topic, bootstrap_servers):
+    def consumer_connect(topic, bootstrap_servers) -> KafkaConsumer:
+        """
+        Args:
+            topic (str):
+            bootstrap_servers (list):
+        Returns:
+            KafkaConsumer (KafkaConsumer):
+        """
         return KafkaConsumer(
             topic,
             api_version=(0, 10),
@@ -73,9 +80,16 @@ class MessageConsumer:
             enable_auto_commit=True,
             value_deserializer=lambda x: json.loads(x.decode('utf-8')))
 
-    def consume(self):
+    def consume(self, throttle_time=0):
+        """Consumes MQ subscription
+         Args:
+             throttle_time (int): throttles consumption by allocating sleep time in s
+
+         """
         for message in self.consumer:
             print(message.value)
             prarams = {"message": message.value}
             requests.post(self.webhook_endpoint, params=prarams)
-            # time.sleep(2)
+            if throttle_time:
+                # throttle consumer
+                time.sleep(throttle_time)
