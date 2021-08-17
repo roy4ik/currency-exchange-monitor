@@ -1,3 +1,5 @@
+import pymongo
+
 from settings import settings
 from pymongo import MongoClient, errors
 import datetime
@@ -8,11 +10,11 @@ class DataBaseManager:
     def connect(self):
         raise NotImplementedError
 
-    def get_rates(self, currency_code, n_recent_rates=1, required_target_currencies=['GBP']):
+    def get_rates(self, currency_code, n_recent_rates=1, target_currency='GBP'):
         raise NotImplementedError
 
-    def set_rate(self, currency_code, target_rates):
-        timestamp = datetime.datetime.now().timestamp()
+    def set_rates(self, currency_code, target_rates):
+        timestamp = int(datetime.datetime.now().timestamp())
         raise NotImplementedError
 
     # def delete_rate(self, timestamp):
@@ -55,81 +57,76 @@ class MongoDataBaseManager(DataBaseManager):
     def get_collection(self):
         return self.db[settings.CONFIG['mongo']['collection_name'].get(str)]
 
-    def get_rates(self, currency_code, n_recent_rates=1, required_target_currencies=["GBP"]):
+    def get_rates(self, currency_code, n_recent_rates=1, target_currency="GBP", sort_newest_to_oldest=True) -> list:
         """gets the rate entries from the db. if n_recent_rates is not defined it will provide the current rate
         Args:
             currency_code (str): currency code like 'EUR'
             n_recent_rates (int): amount of rates to be returned sorted by newest to oldest
-            required_target_currencies (list): rrequired_target_currencies
+            target_currency (str): required_target_currency code
+            sort_newest_to_oldest (bool): sorts results descending from newest to oldest rate
         Returns:
-            rates (list): list of tuples of rates sorted by newest to oldest [(timestamp, rates), ..]
+            rates (list): list of tuples of rates sorted by newest to oldest [(timestamp, rate), ..]
         """
         try:
             # get results sorted by latest timestamp first, and limited by n_recent_rates
-            required_target_currencies_query = [{f"rates.{currency.upper()}": {"$exists": True}}
-                                                for currency in required_target_currencies]
-            results = self.collection.find({"$and": [{"currency_code": currency_code.upper()},
-                                                     *required_target_currencies_query]
-                                            }).sort("timestamp", -1).limit(n_recent_rates)
-            if results.count(with_limit_and_skip=True) == n_recent_rates:
-                print(f"results found: {results.count(with_limit_and_skip=True)}")
-                return [(result.get('timestamp'), result.get('rates')) for result in results]
+            query = {"$and": [{"currency_code": currency_code.upper()},
+                              {f"rates.{target_currency.upper()}": {"$exists": True}}]}
+            # limit and sort operators provided inconsistent results for query limiting  - add as to do for future patch
+            results_cursor = self.collection.find(query)
+            results = sorted([(result.get('timestamp'), result.get('rates').get(target_currency))
+                              for result in results_cursor], key=lambda i: i[0], reverse=sort_newest_to_oldest)
+            results = results[:n_recent_rates]
+            if len(results) == n_recent_rates:
+                return results
             else:
-                print(f"Warning - less than requested rates found in db "
-                      f"({results.count(with_limit_and_skip=True)}), returning [(None, None)]")
+                print(f"Warning - less than requested ({n_recent_rates}) rates found in db: "
+                      f"\ttarget currency: {target_currency} "
+                      f"({len(results)}), returning [(None, None)]")
                 return [(None, None)]
         except errors.ServerSelectionTimeoutError as e:
             print(e)
             self.connect(retry_limit=0)
             return [(None, None)]
 
-    def set_rate(self, currency_code, target_rates):
+    def set_rates(self, currency_code, new_rates):
         """saves the rate and all target rates included in target rates to the db
         Args:
             currency_code (str): currency code like 'EUR'
-            target_rates (dict): {'eur': 1, 'chf': 1.2}
+            new_rates (dict): {'EUR': 1, 'CHF': 1.2}
         Returns:
-            timestamp (float): timestamp is returned if a rate entry has been made, otherwise returns None
+            timestamp (int): timestamp is returned if a rate entry has been made, otherwise returns None
         """
-        timestamp = datetime.datetime.utcnow().timestamp()
-        # get most recent rate to check if it a newer rate is available
-        timestamp_to_update, rates_to_update = self.get_rates(currency_code,
-                                                              n_recent_rates=1,
-                                                              required_target_currencies=list(target_rates.keys()))[0]
-        document = {
-            "currency_code": currency_code.upper(),
-            'timestamp': timestamp,
-            "rates": {k.upper(): v for k, v in target_rates.items()}
-        }
-        try:
-            if rates_to_update:
-                time_delta = datetime.datetime.fromtimestamp(timestamp) - \
-                             datetime.datetime.fromtimestamp(timestamp_to_update)
-                # only save rate if rates changed
-                # TODO: check on currency base
-                #  - currently adding a currency will cause to saving new rates even if only one is new or changed
-                if time_delta.total_seconds() > settings.CONFIG['exchange_api_fetch_interval_seconds'].get(int) and \
-                        rates_to_update != target_rates:
-                    saved_rate = self.collection.insert_one(document)
-                    print(f"saving rates to db:\n{document}, {saved_rate.acknowledged}")
-                    return timestamp
-                else:
-                    print(f"Setting rate: found existing rates: {timestamp_to_update}, {rates_to_update}")
-                    print("rates didn't change no update needed")
-                    return
-            else:
-                # if never run insert below code to make sure you have a low exchange rate for testing
-                initial_rates = {"rates": {"CHF": 0.00001, "GBP": 0.00001, "EUR": 0.00001}}
-                document.update(initial_rates)
+        # get most recent rate to check if it has a newer rate is available
+        updates = {}
+
+        for currency, new_rate in new_rates.items():
+            # get existing rates
+            if new_rate is not None:
+                rate = self.get_rates(currency_code,
+                                      n_recent_rates=1,
+                                      target_currency=currency,
+                                      sort_newest_to_oldest=True)[0][1]
+                if rate != new_rate:
+                    if rate is None:
+                        # rate does not exist -> add to updates:
+                        print(f"saving initial data for {currency}: {new_rate}")
+                    else:
+                        print(f"saving rate change: new:\t{new_rate} -> old:\t{rate}")
+                        # rate changed -> add to updates
+                    updates.update({currency: new_rate})
+
+        timestamp = int(datetime.datetime.utcnow().timestamp())
+        if updates:
+            try:
+                document = {
+                    "currency_code": currency_code.upper(),
+                    'timestamp': timestamp,
+                    "rates": updates
+                }
+                # save rate to db
                 saved_rate = self.collection.insert_one(document)
-                print(f"saving initial rates to db:\n{document}, {saved_rate.acknowledged}")
-                return timestamp
-        except errors.ServerSelectionTimeoutError as e:
-            print(e)
-
-# TODO: clean up rates to only keep a certain amount of rates in db
-
-#     def delete_rate(self, timestamp):
-#         """deletes a rate entry from db based on a timestamp"""
-#         results = self.db.find_one({"timestamp": timestamp})
-#         return self.db.delete_one(results).deleted_count
+                if saved_rate.acknowledged:
+                    print(f"Successfully saved rates to db:\n{document}")
+                    return timestamp
+            except errors.ServerSelectionTimeoutError as e:
+                print(e)

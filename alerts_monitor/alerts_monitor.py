@@ -16,39 +16,31 @@ class AlertsMonitor:
         self.base_currency = base_currency
         self.target_currency_codes = target_currency_codes
         self.threshold = threshold
+
     message_broker = MessageBroker()
 
     def monitor(self):
         # set n_recent rates minimum to 2 to get more than one rate, otherwise can't compare
-        rates = self.db_manager.get_rates(
-            self.base_currency,
-            n_recent_rates=2,
-            required_target_currencies=self.target_currency_codes)
-        self._monitor_rate_increase(rates)
+        for target_currency in self.target_currency_codes:
+            rates = self.db_manager.get_rates(
+                self.base_currency,
+                n_recent_rates=2,
+                target_currency=target_currency)
+            if len(rates) > 1:
+                new_ts, new_rate = rates[0][0], rates[0][-1]
+                previous_ts, previous_rate = rates[-1][0], rates[-1][-1]
+                self._monitor_rate_increase(target_currency, new_rate, previous_rate)
+            else:
+                print(f'Not enough rates to compare: only {len(rates)} rates available for comparison')
 
-    def _monitor_rate_increase(self, rates):
-        if len(rates) > 1:
-            # check increase for every target currency
-            for target_currency in self.target_currency_codes:
-                #     get timestamps and rates to compare
-                latest_timestamp, latest_rates = rates[0][0], rates[0][1]
-                previous_timestamp, previous_rates = rates[-1][0], rates[-1][1]
-                # if both timestamps exist compare rates
-                if latest_timestamp and previous_timestamp:
-                    latest_rate = latest_rates.get(target_currency)
-                    previous_rate = previous_rates.get(target_currency)
-                    # check if rate exists for both timestamps
-                    if latest_rate and previous_rate:
-                        rate_delta = latest_rate - previous_rate
-                        print(f"{target_currency}:\n"
-                              f"\tts: {latest_timestamp}\t\tlatest rate: {latest_rate}\n"
-                              f"\tts: {previous_timestamp}\t\tprevious rate: {previous_rate}")
-                        # compare delta to threshold
-                        if rate_delta >= self.threshold:
-                            # rate increase higher or equal threshold -> send alert!
-                            self.send_alert(target_currency, latest_rate, rate_delta)
-                        else:
-                            print(f"{self.base_currency} -> {target_currency} rate not increased beyond threshold")
+    def _monitor_rate_increase(self, target_currency, new_rate, previous_rate):
+        # compare delta to threshold
+        if new_rate - previous_rate >= self.threshold:
+            # rate increase higher or equal threshold -> send alert!
+            self.send_alert(target_currency, new_rate, rate_delta=new_rate - previous_rate)
+        else:
+            print(f"{self.base_currency} -> {target_currency} rate not increased beyond threshold\n"
+                  f"new:\t{new_rate}\told:\t{previous_rate} delta:{new_rate - previous_rate}")
 
     def send_alert(self, target_currency, latest_rate, rate_delta):
         """sends alert to message broker

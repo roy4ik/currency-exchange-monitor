@@ -16,13 +16,28 @@ class DataProcessor:
     def run(self):
         while True:
             # fetch data
-            currency_fetcher = CurrencyApiAdapter()
-            base_currency, target_rates_dict = currency_fetcher.fetch()
-            if target_rates_dict:
+            currency_fetcher = CurrencyApiAdapter(base_currency="USD")
+            base_currency, rates_dict = currency_fetcher.fetch()
+            if rates_dict:
                 # save data to db
-                self.db_manager.set_rate(base_currency, target_rates_dict)
+                self.db_manager.set_rates(base_currency, rates_dict)
             time.sleep(self.fetch_interval)
 
+        # # testing rates increase/decrease --comment out after test -> move to tests file
+        # rates_dicts = [{"EUR": 0.1, "CHF": 0.2}, {"EUR": 0.3, "CHF": 0.4}, {"EUR": 0.1, "CHF": 0.2},
+        # {"EUR": 0.5, "CHF": 0.1}, {"EUR": 0.1, "CHF": 0.2},
+        # {"EUR": 0.3, "CHF": 0.4}, {"EUR": 0.1, "CHF": 0.2}, {"EUR": 0.5, "CHF": 0.1}, {"EUR": 0.1, "CHF": 0.2},
+        # {"EUR": 0.3, "CHF": 0.4}, {"EUR": 0.1, "CHF": 0.2}, {"EUR": 0.5, "CHF": 0.1}, {"EUR": 0.1, "CHF": 0.2},
+        # {"EUR": 0.3, "CHF": 0.4}, {"EUR": 0.1, "CHF": 0.2}, {"EUR": 0.5, "CHF": 0.1}]
+        # for rates_dict in rates_dicts:
+        #     if rates_dict:
+        #         # save data to db
+        #         self.db_manager.set_rates("USD", rates_dict)
+        #     time.sleep(self.fetch_interval)
 
+
+db_manager = MongoDataBaseManager()
+
+# run data processor
 data_processor = DataProcessor()
 data_processor.run()
