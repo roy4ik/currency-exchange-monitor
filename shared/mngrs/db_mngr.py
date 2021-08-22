@@ -71,11 +71,9 @@ class MongoDataBaseManager(DataBaseManager):
             # get results sorted by latest timestamp first, and limited by n_recent_rates
             query = {"$and": [{"currency_code": currency_code.upper()},
                               {f"rates.{target_currency.upper()}": {"$exists": True}}]}
-            # limit and sort operators provided inconsistent results for query limiting  - add as to do for future patch
-            results_cursor = self.collection.find(query)
-            results = sorted([(result.get('timestamp'), result.get('rates').get(target_currency))
-                              for result in results_cursor], key=lambda i: i[0], reverse=sort_newest_to_oldest)
-            results = results[:n_recent_rates]
+            results_cursor = self.collection.find(query).sort("timestamp", pymongo.DESCENDING).limit(n_recent_rates)
+            results = [(result.get('timestamp'), result.get('rates').get(target_currency))
+                       for result in results_cursor]
             if len(results) == n_recent_rates:
                 return results
             else:

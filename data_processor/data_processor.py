@@ -23,7 +23,7 @@ class DataProcessor:
                 self.db_manager.set_rates(base_currency, rates_dict)
             time.sleep(self.fetch_interval)
 
-        # # testing rates increase/decrease --comment out after test -> move to tests file
+        # # # testing rates increase/decrease --comment out after test -> move to tests file
         # rates_dicts = [{"EUR": 0.1, "CHF": 0.2}, {"EUR": 0.3, "CHF": 0.4}, {"EUR": 0.1, "CHF": 0.2},
         # {"EUR": 0.5, "CHF": 0.1}, {"EUR": 0.1, "CHF": 0.2},
         # {"EUR": 0.3, "CHF": 0.4}, {"EUR": 0.1, "CHF": 0.2}, {"EUR": 0.5, "CHF": 0.1}, {"EUR": 0.1, "CHF": 0.2},
