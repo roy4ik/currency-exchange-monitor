@@ -16,4 +16,4 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 50051
 
-ENTRYPOINT [ "python", "/service/alerts_handler/alerts_handler.py" ]
+ENTRYPOINT ["python", "/service/alerts_handler/alerts_handler.py" ]

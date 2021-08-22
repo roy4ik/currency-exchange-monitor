@@ -17,8 +17,8 @@ class DataBaseManager:
         timestamp = int(datetime.datetime.now().timestamp())
         raise NotImplementedError
 
-    # def delete_rate(self, timestamp):
-    #     raise NotImplementedError
+    def delete_rate(self, timestamp):
+        raise NotImplementedError
 
 
 class MongoDataBaseManager(DataBaseManager):
@@ -128,3 +128,16 @@ class MongoDataBaseManager(DataBaseManager):
                     return timestamp
             except errors.ServerSelectionTimeoutError as e:
                 print(e)
+
+    def delete_rate(self, *timestamp) -> bool:
+        """deletes the rates for provided timestamps
+        Args:
+            timestamp (float): timestamp of a given rate in the db
+        Returns:
+            deletion acknowledged (bool)
+            """
+        try:
+            result = self.collection.delete_many({"$or": [{"timestamp": ts for ts in timestamp}]})
+            return result.acknowledged
+        except errors.ServerSelectionTimeoutError as e:
+            print(e)
